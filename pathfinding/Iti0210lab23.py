@@ -2,7 +2,17 @@ from queue import Queue, PriorityQueue
 
 
 def heuristic_astar(node, goal, steps):
-    return max(abs(node[0] - goal[0]), abs(node[1] - goal[1])) * steps  # suurim koordinaadi nihe
+    manhattan = heuristic_greedy(node, goal)
+    return manhattan + 1.12 * steps  # töötab diagonaalidega päris hästi
+
+    # return manhattan + steps  # töötab vertikaalselt ja horisontaalselt
+    # return manhattan // 2 + manhattan % 2 + steps  # töötab diagonaalidega alati aga päris aeglaselt
+
+    # a = abs(node[0] - goal[0])
+    # b = abs(node[1] - goal[1])
+    # return min(a, b) // 2 + min(a, b) % 2 + abs(a-b) + steps
+
+    # return manhattan * 2 + steps
 
 
 def heuristic_greedy(node, goal):
@@ -54,35 +64,6 @@ def map2():
 def get_lava_map(filename):
     with open(filename) as f:
         return [[map_char for map_char in map_line.strip()] for map_line in f.readlines() if len(map_line) > 1]
-
-
-lava_map_original = [map1(), map2(), get_lava_map("cave300x300"), get_lava_map("cave600x600"), get_lava_map(
-    "cave900x900")][4]
-
-lava_map = [[x for x in y] for y in lava_map_original]
-
-map_height = len(lava_map)
-map_width = len(lava_map[0])
-
-# (y, x)
-parent_map = [[(-1, -1) for x in range(map_width)] for y in range(map_height)]
-
-start_y = 0
-start_x = 0
-
-end_y = 0
-end_x = 0
-
-for y_coord, line in enumerate(lava_map):
-    for x_coord, char in enumerate(line):
-        if char == "s":
-            start_y = y_coord
-            start_x = x_coord
-        if char == "D":
-            end_y = y_coord
-            end_x = x_coord
-
-end_pos = (end_y, end_x)
 
 
 def move_astar(cur_pos, new_pos, queue, steps):
@@ -157,6 +138,34 @@ def greedy():
         for move_y, move_x in MOVES:
             move_greedy((cur_y, cur_x), (cur_y + move_y, cur_x + move_x), queue)
 
+
+lava_map_original = \
+[map1(), map2(), get_lava_map("cave300x300"), get_lava_map("cave600x600"), get_lava_map("cave900x900")][4]
+
+lava_map = [[x for x in y] for y in lava_map_original]
+
+map_height = len(lava_map)
+map_width = len(lava_map[0])
+
+# (y, x)
+parent_map = [[(-1, -1) for x in range(map_width)] for y in range(map_height)]
+
+start_y = 0
+start_x = 0
+
+end_y = 0
+end_x = 0
+
+for y_coord, line in enumerate(lava_map):
+    for x_coord, char in enumerate(line):
+        if char == "s":
+            start_y = y_coord
+            start_x = x_coord
+        if char == "D":
+            end_y = y_coord
+            end_x = x_coord
+
+end_pos = (end_y, end_x)
 
 total_iterations = aStar()
 
