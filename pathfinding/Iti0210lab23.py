@@ -106,6 +106,10 @@ def move_dijkstra(cur_pos, new_pos, queue):
         parent_map[new_pos[0]][new_pos[1]] = cur_pos  # update parent map
 
 
+# MOVES = [(1, 0), (0, 1), (-1, 0), (0, -1)]
+MOVES = [(1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, 1), (-1, -1), (1, -1)]
+
+
 def aStar():
     queue = PriorityQueue()
     queue.put((0, (0, (start_y, start_x))))
@@ -118,10 +122,8 @@ def aStar():
         if cur_y == end_y and cur_x == end_x:
             return iterations
 
-        move_astar((cur_y, cur_x), (cur_y + 1, cur_x), queue, steps)
-        move_astar((cur_y, cur_x), (cur_y - 1, cur_x), queue, steps)
-        move_astar((cur_y, cur_x), (cur_y, cur_x + 1), queue, steps)
-        move_astar((cur_y, cur_x), (cur_y, cur_x - 1), queue, steps)
+        for move_y, move_x in MOVES:
+            move_astar((cur_y, cur_x), (cur_y + move_y, cur_x + move_x), queue, steps)
 
 
 def dijkstra():
@@ -136,10 +138,8 @@ def dijkstra():
         if cur_y == end_y and cur_x == end_x:
             return iterations
 
-        move_dijkstra((cur_y, cur_x), (cur_y + 1, cur_x), queue)
-        move_dijkstra((cur_y, cur_x), (cur_y - 1, cur_x), queue)
-        move_dijkstra((cur_y, cur_x), (cur_y, cur_x + 1), queue)
-        move_dijkstra((cur_y, cur_x), (cur_y, cur_x - 1), queue)
+        for move_y, move_x in MOVES:
+            move_dijkstra((cur_y, cur_x), (cur_y + move_y, cur_x + move_x), queue)
 
 
 def greedy():
@@ -154,15 +154,13 @@ def greedy():
         if cur_y == end_y and cur_x == end_x:
             return iterations
 
-        move_greedy((cur_y, cur_x), (cur_y + 1, cur_x), queue)
-        move_greedy((cur_y, cur_x), (cur_y - 1, cur_x), queue)
-        move_greedy((cur_y, cur_x), (cur_y, cur_x + 1), queue)
-        move_greedy((cur_y, cur_x), (cur_y, cur_x - 1), queue)
+        for move_y, move_x in MOVES:
+            move_greedy((cur_y, cur_x), (cur_y + move_y, cur_x + move_x), queue)
 
 
-iterations = aStar()
+total_iterations = aStar()
 
-print("Map with all the moves made. Iteration count = ", iterations)
+print("Map with all the moves made. Iteration count = ", total_iterations)
 # [print("".join(x)) for x in lava_map]
 
 parent = (end_y, end_x)
