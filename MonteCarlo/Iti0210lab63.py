@@ -1,6 +1,6 @@
 import random
 
-GAMES = 200
+GAMES = 1000
 
 WIDTH = 7
 HEIGHT = 6
@@ -49,36 +49,120 @@ class ConnectFour:
             print("Invalid move!")
 
     def do_AI_move(self):
-        ai_move = 0
         self.scores = dict()
 
-        for move in self.get_available_moves():
-            self.scores[move] = []
+        move = self.get_none_or_certain_win()
+        if move is not None:
+            print(f"AI blocked player with move {move}")
+            self.do_move_for_side(move)
+            return
+
+        for move in range(7):
+            self.scores[move] = [0, 0, 0]
 
         for move in self.get_available_moves():
             self.monte_carlo(move)
 
-        print(f"AI move was {ai_move}")
+        print()
+        print(self.scores)
+        scores = [value[0] + 0.5 * value[1] for value in self.scores.values()]
+        best_moves = [i for i, j in enumerate(scores) if j == max(scores)]
 
-    def simulate_random_moves(self):
-        for game in range(GAMES):
-            game_moves = self.moves_left
-            while 1:
-                move = random.choice(self.get_available_moves())
+        move = random.choice(best_moves)
+        self.do_move_for_side(move)
 
+        print(f"AI move was {move}")
 
-    def monte_carlo(self, move):
-        # do move
-        move_row = -1
+    def do_move_for_side(self, move):
         for i in range(HEIGHT - 1, -1, -1):
             if self.board[i][move] == 0:
                 self.board[i][move] = AI
-                move_row = i
+                break
 
-        self.simulate_random_moves()
+    def simulate_random_moves(self, root_move):
+        for game in range(GAMES):
+            board = [row[:] for row in self.board]
+            game_moves = self.moves_left
+            while 1:
+                game_moves -= 1
+                if game_moves == 0:
+                    self.scores[root_move][1] += 1
+                    break
+
+                move = random.choice(self.get_available_moves())
+
+                for i in range(HEIGHT - 1, -1, -1):
+                    if self.board[i][move] == 0:
+                        self.board[i][move] = PLAYER
+                        break
+
+                if self.is_game_over(PLAYER):
+                    self.scores[root_move][0] += 1
+                    break
+
+                game_moves -= 1
+                if game_moves == 0:
+                    self.scores[root_move][1] += 1
+                    break
+
+                move = random.choice(self.get_available_moves())
+
+                self.do_move_for_side(move)
+
+                if self.is_game_over(AI):
+                    self.scores[root_move][2] += 1
+                    break
+
+            self.board = [row[:] for row in board]  # revert board
+
+    def get_none_or_certain_win(self):
+
+        for move in self.get_available_moves():
+            move_row = 0
+            for i in range(HEIGHT - 1, -1, -1):
+                if self.board[i][move] == 0:
+                    # do move
+                    self.board[i][move] = AI
+                    move_row = i
+                    break
+
+            # undo move
+            if self.is_game_over(AI):
+                self.board[move_row][move] = 0
+                return move
+            else:
+                self.board[move_row][move] = 0
+
+            move_row = 0
+            for i in range(HEIGHT - 1, -1, -1):
+                if self.board[i][move] == 0:
+                    # do move
+                    self.board[i][move] = PLAYER
+                    move_row = i
+                    break
+
+            # undo move
+            if self.is_game_over(PLAYER):
+                self.board[move_row][move] = 0
+                return move
+            else:
+                self.board[move_row][move] = 0
+
+        return None
+
+    def monte_carlo(self, move):
+        move_row = 0
+        for i in range(HEIGHT - 1, -1, -1):
+            if self.board[i][move] == 0:
+                # do move
+                self.board[i][move] = AI
+                move_row = i
+                break
+
+        self.simulate_random_moves(move)
 
         # undo move
-        self.board[move_row][move_row] = 0
+        self.board[move_row][move] = 0
 
     def do_player_move(self):
         player_move = self.ask_and_validate_player_move()
