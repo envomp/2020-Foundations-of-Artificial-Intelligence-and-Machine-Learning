@@ -12,20 +12,20 @@ OK = 1024
 NO_MAP_TO_EXPLORE = 2048
 
 # for testing
-world1 = [[STENCH | OK,     OK,                             BREEZE | OK,    PIT],
-          [WUMPUS,          BREEZE | STENCH | GOLD | OK,    PIT,            BREEZE | OK],
-          [STENCH | OK,     OK,                             BREEZE | OK,    OK],
-          [OK,              BREEZE | OK,                    PIT,            BREEZE | OK]]
+world1 = [[STENCH | OK, OK, BREEZE | OK, PIT],
+          [WUMPUS, BREEZE | STENCH | GOLD | OK, PIT, BREEZE | OK],
+          [STENCH | OK, OK, BREEZE | OK, OK],
+          [OK, BREEZE | OK, PIT, BREEZE | OK]]
 
 observable_world1 = [[UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
                      [UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
                      [UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
-                     [OK,      UNKNOWN, UNKNOWN, UNKNOWN]]
+                     [OK, UNKNOWN, UNKNOWN, UNKNOWN]]
 
-observable_world2 = [[UNKNOWN,      UNKNOWN,        UNKNOWN,        UNKNOWN],
-                     [UNKNOWN,      UNKNOWN,        STENCH | OK,    UNKNOWN],
-                     [BREEZE | OK,  STENCH | OK,    BREEZE | OK,    OK],
-                     [OK,           BREEZE | OK,    UNKNOWN,        UNKNOWN]]
+observable_world2 = [[UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN],
+                     [UNKNOWN, UNKNOWN, STENCH | OK, UNKNOWN],
+                     [BREEZE | OK, STENCH | OK, BREEZE | OK, OK],
+                     [OK, BREEZE | OK, UNKNOWN, UNKNOWN]]
 
 
 def deal_with_sensor_attribute(board, x, y, attribute, world_exists, target):
@@ -74,7 +74,8 @@ def resolve_STENCH(x, y, board, world_exists):
             if board[y][x - 1] & GUARANTEED_NO_PIT and board[y][x - 1] & POTENTIAL_WUMPUS:
                 board[y][x - 1] ^= GUARANTEED_NO_PIT | POTENTIAL_WUMPUS | WUMPUS
 
-        if x < len(board[0]) - 1 and not board[y][x + 1] & (PIT | WUMPUS | OK | NO_MAP_TO_EXPLORE if world_exists else 0):
+        if x < len(board[0]) - 1 and not board[y][x + 1] & (
+                PIT | WUMPUS | OK | NO_MAP_TO_EXPLORE if world_exists else 0):
             if board[y][x + 1] & GUARANTEED_NO_PIT and board[y][x + 1] & POTENTIAL_WUMPUS:
                 board[y][x + 1] ^= GUARANTEED_NO_PIT | POTENTIAL_WUMPUS | WUMPUS
 
@@ -97,7 +98,8 @@ def resolve_BREEZE(x, y, board, world_exists):
             if board[y][x - 1] & GUARANTEED_NO_WUMPUS and board[y][x - 1] & POTENTIAL_WUMPUS:
                 board[y][x - 1] ^= GUARANTEED_NO_PIT | POTENTIAL_PIT | PIT
 
-        if x < len(board[0]) - 1 and not board[y][x + 1] & (PIT | WUMPUS | OK | NO_MAP_TO_EXPLORE if world_exists else 0):
+        if x < len(board[0]) - 1 and not board[y][x + 1] & (
+                PIT | WUMPUS | OK | NO_MAP_TO_EXPLORE if world_exists else 0):
             if board[y][x + 1] & GUARANTEED_NO_WUMPUS and board[y][x + 1] & POTENTIAL_WUMPUS:
                 board[y][x + 1] ^= GUARANTEED_NO_PIT | POTENTIAL_PIT | PIT
 
@@ -198,7 +200,8 @@ def game_loop(starting_board, real_board):
         for y in range(len(starting_board)):
             for x in range(len(starting_board[y])):
 
-                if starting_board[y][x] & GUARANTEED_NO_PIT and starting_board[y][x] & GUARANTEED_NO_WUMPUS:  # position is marked as safe
+                if starting_board[y][x] & GUARANTEED_NO_PIT and starting_board[y][
+                    x] & GUARANTEED_NO_WUMPUS:  # position is marked as safe
                     starting_board[y][x] ^= GUARANTEED_NO_PIT | GUARANTEED_NO_WUMPUS
 
                     if real_board:
@@ -209,10 +212,12 @@ def game_loop(starting_board, real_board):
                     if starting_board[y][x] & UNKNOWN:
                         starting_board[y][x] ^= UNKNOWN
 
-                if starting_board[y][x] & UNKNOWN or starting_board[y][x] & POTENTIAL_WUMPUS or starting_board[y][x] & POTENTIAL_PIT:
+                if starting_board[y][x] & UNKNOWN or starting_board[y][x] & POTENTIAL_WUMPUS or starting_board[y][
+                    x] & POTENTIAL_PIT:
                     continue  # dangerous
 
-                if starting_board[y][x] & OK and not (starting_board[y][x] & BREEZE) and not (starting_board[y][x] & STENCH):
+                if starting_board[y][x] & OK and not (starting_board[y][x] & BREEZE) and not (
+                        starting_board[y][x] & STENCH):
                     resolve_OK(x, y, starting_board, real_board)
 
                 if starting_board[y][x] & BREEZE:  # Sensor detected breeze
@@ -230,5 +235,30 @@ def game_loop(starting_board, real_board):
     print_human_readable_board(starting_board)
 
 
+# clause and alpha
+def resolve(clause, alpha):
+    clause = clause.split(" v ")
+    alpha = alpha.split(" v ")
+    answers = []
+
+    for j, element in enumerate(clause):
+        if element.startswith("-"):
+            if element[1:] in alpha:
+                i = alpha.index(element[1:])
+                answers.append(clause[0:j] + clause[j + 1:] + alpha[0:i] + alpha[i + 1:])
+        else:
+            if "-" + element in alpha:
+                i = alpha.index("-" + element)
+                answers.append(clause[0:j] + clause[j + 1:] + alpha[0:i] + alpha[i + 1:])
+
+    return [list(filter(lambda x: x, sorted(list(set(x)) for x in answers)))][0]
+
+
 if __name__ == '__main__':
+    print(resolve("a v b", "a v -b"))
+    print(resolve("a v b v -c", "a v c"))
+    print(resolve("a v b v -c v d", "a v c v -d"))
+    print(resolve("d", "-d"))
+    print(resolve("a v -b", "a v -c v d"))
+    print()
     game_loop(observable_world2, None)
