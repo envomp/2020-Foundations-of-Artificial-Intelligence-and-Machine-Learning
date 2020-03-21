@@ -3,8 +3,8 @@ man(marcus).
 man(jaan).
 man(francesco).
 
-pompej_civilian(francesco).
-pompej_civilian(marcus).
+citizen(francesco, pompej).
+citizen(marcus, pompej).
 
 birth_date(enrico, 1999).
 birth_date(marcus, 40).
@@ -13,25 +13,32 @@ birth_date(francesco, 1989).
 
 mortal(man).
 
-eradication(pompej_civilian, 79).
+eradication(pompej, 79).
+
 lifetime(mortal, 150).
 
 is_mortal(Name) :- man(Name), mortal(man).
 
-alive(Year, Human) :- not(is_mortal(Human)), birth_date(Human, Birth), Year >= Birth. % is immortal
+death_to_eradication(Name, Year) :-
+    citizen(Name, Location),
+    birth_date(Name, Birth),
+    eradication(Location, Eradication_year),
+    Birth < Eradication_year,
+    Eradication_year =< Year.
 
-alive(Year, Human) :- is_mortal(Human), mortal(man), lifetime(mortal, Mortality), birth_date(Human, Birth), Year - Birth =< Mortality, Year >= Birth,
-                      (
-                            (pompej_civilian(Human), eradication(pompej_civilian, Eradication_year),
-                                (
-                                    (Birth =< Eradication_year, Eradication_year > Year)
-                                        ;
-                                    (Birth >  Eradication_year)
-                                )
-                                    ;
-                                (not(pompej_civilian(Human)))
-                            )
-                      ).
+alive(Year, Name) :-
+    not(is_mortal(Name)),
+    birth_date(Name, Birth),
+    Year >= Birth.
+
+alive(Year, Name) :-
+    is_mortal(Name),
+    mortal(man),
+    lifetime(mortal, Mortality),
+    birth_date(Name, Birth),
+    Year - Birth =< Mortality,
+    Year >= Birth,
+    not(death_to_eradication(Name, Year)).
 
 %   ?- alive(2019, marcus).
 %   false. # eradication event and too old
