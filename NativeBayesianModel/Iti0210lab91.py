@@ -7,7 +7,7 @@ class NativeBayesianModel:
 
     def __init__(self):
         self.ham_l = self.read_dir(os.path.join("enron6", "ham"))  # list mitte spam sõnadest
-        self.spam_l = self.read_dir(os.path.join("enron6", "spam"))  # list spam sõnadest
+        self.spam_l = self.read_dir(os.path.join("enron6", "spam"))  # list spam sõnades
 
         self.ham_l_repetitions = dict()  # mitte spam sõnade kordus
         self.spam_l_repetitions = dict()  # spam sõnade kordus
@@ -32,12 +32,11 @@ class NativeBayesianModel:
         self.total_l_repetitions_keyset = self.ham_l_repetitions.keys() | self.spam_l_repetitions.keys()  # unikaalsed sõnad
         self.total_l_repetitions_keyset_size = len(self.total_l_repetitions_keyset)  # unikaalsed sõnade arv
 
-        self.ham_l_len = len(self.ham_l)  # Mitte spam'is olevate sõnade arv
-        self.spam_l_len = len(self.spam_l)  # Spam'is olevate sõnade arv
-        self.total_1_len = self.spam_l_len + self.ham_l_len  # Kõikide sõnade arv
+        self.ham_l_len = sum([len(x) for x in self.ham_l])  # Mitte spam'is olevate sõnade arv
+        self.spam_l_len = sum([len(x) for x in self.spam_l])  # Spam'is olevate sõnade arv
 
-        self.P_spam = len(self.spam_l) / self.total_1_len
-        self.P_ham = len(self.ham_l) / self.total_1_len
+        self.P_spam = len(self.spam_l) / (len(self.ham_l) + len(self.spam_l))
+        self.P_ham = len(self.ham_l) / (len(self.ham_l) + len(self.spam_l))
 
     def read_dir(self, dirn):
         cont_l = []
@@ -84,20 +83,27 @@ class NativeBayesianModel:
         # Hspam = log P(spam) * log P(w1|spam) *... * P log(wn|spam)
         # Hham = log P(ham) * log P(w1|ham) * ... * log P(wn|ham)
 
-        H_spam = math.log10(self.P_spam)
-        H_ham = math.log10(self.P_ham)
+        H_spam = math.log(self.P_spam)
+        H_ham = math.log(self.P_ham)
 
         for word in text:
             if word in self.total_l_repetitions_keyset:
-                H_ham += math.log10(self.P_w_c(self.Nz(self.ham_l_repetitions.get(word)), self.ham_l_len,
-                                               self.ham_l_repetitions_keyset_size))
-                H_spam += math.log10(self.P_w_c(self.Nz(self.spam_l_repetitions.get(word)), self.spam_l_len,
-                                                self.spam_l_repetitions_keyset_size))
+                H_ham += math.log(self.P_w_c(self.Nz(self.ham_l_repetitions.get(word)), self.ham_l_len,
+                                             self.total_l_repetitions_keyset_size))
+                H_spam += math.log(self.P_w_c(self.Nz(self.spam_l_repetitions.get(word)), self.spam_l_len,
+                                              self.total_l_repetitions_keyset_size))
 
-        return "SPAM" if H_spam >= H_ham else "NOT SPAM"
+        spam_chance = 1 / (1 + math.pow(math.e, H_ham - H_spam))
+        ham_chance = 1 / (1 + math.pow(math.e, H_spam - H_ham))
+
+        return "Mail is " + ("SPAM" if H_spam >= H_ham else "NOT SPAM") + " with the chance of " + str(
+            round(max(ham_chance, spam_chance), 5) * 100) + "%"
 
 
 if __name__ == '__main__':
     model = NativeBayesianModel()
     print(model.classify_text(set(model.read_file("enron6/Letter1.txt"))))
+    # Mail is NOT SPAM with the chance of 99.995%
+
     print(model.classify_text(set(model.read_file("enron6/Letter2.txt"))))
+    # Mail is SPAM with the chance of 100.0%
